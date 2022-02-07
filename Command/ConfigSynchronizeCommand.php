@@ -1,13 +1,15 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
-
 
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
@@ -15,15 +17,10 @@ use Symfony\Component\Yaml\Yaml;
 class ConfigSynchronizeCommand extends Command
 {
     protected static $defaultName = 'config:sync';
-
     private static string $defaultScope = 'global';
-
     private string $projectDir;
-
     private SystemConfigService $systemConfigService;
-
     private EntityRepositoryInterface $salesChannelRepository;
-
     private OutputInterface $output;
 
     public function __construct(
@@ -41,12 +38,21 @@ class ConfigSynchronizeCommand extends Command
     {
         parent::configure();
         $this->setDescription('Update system config like defined in file config/config.yaml');
+        $this->addArgument(
+            'config_path',
+            InputArgument::OPTIONAL,
+            'Path to config yaml',
+            'config/config.yaml'
+        );
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
+    protected function execute(
+        InputInterface $input,
+        OutputInterface $output
+    ): int {
         $this->output = $output;
-        $filePath = $this->projectDir . '/config/config.yaml';
+        $configPath = $input->getArgument('config_path');
+        $filePath = $this->projectDir . '/' . $configPath;
         if (!file_exists($filePath)) {
             $this->output->writeln(sprintf('%s not found', $filePath));
 
@@ -73,9 +79,8 @@ class ConfigSynchronizeCommand extends Command
 
     private function executeConfigSet(array $config, string $name, ?string $salesChannelId = null): void
     {
-        if ($name !== null) {
-            $this->output->writeln(sprintf('Current config scope: "%s"', $name));
-        }
+        $this->output->writeln(sprintf('Current config scope: "%s"', $name));
+        $this->output->writeln('---------------------------------------');
         foreach ($config as $key => $value) {
             $currentValue = $this->systemConfigService->get($key, $salesChannelId);
             $this->output->writeln(sprintf('Current value: "%s" for key: "%s"', $currentValue, $key));
@@ -91,11 +96,25 @@ class ConfigSynchronizeCommand extends Command
 
     private function executeSalesChannelConfigSync(array $yaml): void
     {
+        $salesChannelUpdated = $salesChannelNotUpdated = [];
         $salesChannels = $this->getSalesChannels();
         foreach ($salesChannels as $name => $salesChannelId) {
             if (isset($yaml[$name])) {
                 $this->executeConfigSet($yaml[$name], $name, $salesChannelId);
+                $salesChannelUpdated[$salesChannelId] = $name;
                 $this->output->writeln('---------------------------------------');
+            } else {
+                $salesChannelNotUpdated[$salesChannelId] = $name;
+            }
+        }
+
+        // put info message only if the salesChannel was totally not updated,
+        // we get a salesChannel for every translation, to work in yaml file with the name of the translation
+        foreach ($salesChannelNotUpdated as $idNotUpdated => $name) {
+            if (array_key_exists($idNotUpdated, $salesChannelUpdated) === false) {
+                $this->output->writeln(
+                    sprintf('>>> No config update for SalesChannel with id: "%s" <<<', $idNotUpdated)
+                );
             }
         }
     }
