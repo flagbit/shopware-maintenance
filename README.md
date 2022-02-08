@@ -58,18 +58,19 @@ return [
 
 The file `config/config.yaml` defines Shopware plugin configuration values to be set.
 
-**Example**
-
+**Example**  
+Use **global** for all SalesChannels. Or use the **name** from one SalesChannel translation to update the config.  
+We do not use the **uuid** from the SalesChannel because this can be different from envoirment to envoirment.
 ```yaml
 # config/config.yaml
 
-global:
+"global":
     "core.listing.productsPerPage": 48
-Storefront:
+"Store Name":
     "core.listing.productsPerPage": 48
     "core .listing.allowBuyInListing": false
     "core.listing.showReview": false
-Headless:
+"Headless":
     "core.listing.productsPerPage": 48
 
 ```
