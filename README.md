@@ -68,7 +68,7 @@ We do not use the **uuid** from the SalesChannel because this can be different f
     "core.listing.productsPerPage": 48
 "Store Name":
     "core.listing.productsPerPage": 48
-    "core .listing.allowBuyInListing": false
+    "core.listing.allowBuyInListing": false
     "core.listing.showReview": false
 "Headless":
     "core.listing.productsPerPage": 48
