@@ -70,7 +70,7 @@ class PluginSynchronizeCommand extends Command
                 $currentTry = $maxRetries; // if there was no error we skip the second try
             }
             $currentTry++;
-        } while ($currentTry < $maxRetries);
+        } while ($currentTry <= $maxRetries);
 
         return self::SUCCESS;
     }
