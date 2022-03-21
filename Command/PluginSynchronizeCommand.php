@@ -2,22 +2,27 @@
 
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 
+use Psr\Log\LoggerInterface;
+use Shopware\Core\Framework\Plugin\Exception\PluginBaseClassNotFoundException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Shopware\Core\Framework\Plugin\Exception\PluginBaseClassNotFoundException;
 
 class PluginSynchronizeCommand extends Command
 {
     protected static $defaultName = 'plugin:sync';
 
     private string $projectDir;
+    private LoggerInterface $logger;
 
-    public function __construct(string $projectDir)
-    {
+    public function __construct(
+        string $projectDir,
+        LoggerInterface $logger
+    ) {
         parent::__construct();
         $this->projectDir = $projectDir;
+        $this->logger = $logger;
     }
 
     protected function configure(): void
@@ -104,6 +109,7 @@ class PluginSynchronizeCommand extends Command
                 '--activate' => true,
             ], $output);
         } catch (PluginBaseClassNotFoundException $baseClassNotFoundException) {
+            $this->logger->error($baseClassNotFoundException->getMessage());
             return self::FAILURE;
         }
 
