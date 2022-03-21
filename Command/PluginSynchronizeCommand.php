@@ -6,6 +6,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Shopware\Core\Framework\Plugin\Exception\PluginBaseClassNotFoundException;
 
 class PluginSynchronizeCommand extends Command
 {
@@ -52,15 +53,21 @@ class PluginSynchronizeCommand extends Command
             ], $output);
         }
 
-        foreach ($enabledPlugins as $enabledPlugin) {
-            $this->runCommand([
-                'command' => 'plugin:install',
-                'plugins' => [$enabledPlugin],
-                '--activate' => true,
-            ], $output);
-        }
+        $currentTry = 1;
+        $maxRetries = 2;
+        do {
+            $pluginsActivated = [];
+            foreach ($enabledPlugins as $enabledPlugin) {
+                $pluginsActivated[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
+            }
+            $errorSum = (int) array_sum($pluginsActivated);
+            if ($errorSum === self::SUCCESS) {
+                $currentTry = $maxRetries; // if there was no error we skip the second try
+            }
+            $currentTry++;
+        } while ($currentTry < $maxRetries);
 
-        return 0;
+        return self::SUCCESS;
     }
 
     /**
@@ -68,6 +75,7 @@ class PluginSynchronizeCommand extends Command
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @return int
+     * @throws \Symfony\Component\Console\Exception\ExceptionInterface
      */
     private function runCommand(array $parameters, OutputInterface $output): int
     {
@@ -85,5 +93,20 @@ class PluginSynchronizeCommand extends Command
         $input->setInteractive(false);
 
         return $command->run($input, $output);
+    }
+
+    private function executePluginInstall(string $enabledPlugin, OutputInterface $output): int
+    {
+        try {
+            $this->runCommand([
+                'command' => 'plugin:install',
+                'plugins' => [$enabledPlugin],
+                '--activate' => true,
+            ], $output);
+        } catch (PluginBaseClassNotFoundException $baseClassNotFoundException) {
+            return self::FAILURE;
+        }
+
+        return self::SUCCESS;
     }
 }
