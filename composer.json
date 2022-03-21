@@ -11,8 +11,8 @@
         ]
     },
     "require": {
-        "symfony/framework-bundle": ">=4.4",
+        "shopware/core": "*",
         "symfony/console": ">=4.4",
-        "shopware/core": "*"
+        "symfony/framework-bundle": ">=4.4"
     }
 }

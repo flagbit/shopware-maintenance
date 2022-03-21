@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 
@@ -46,10 +48,6 @@ class PluginSynchronizeCommand extends Command
         $enabledPlugins = array_keys(array_filter($plugins, function ($isEnabled) {
             return $isEnabled === true;
         }));
-
-        $this->runCommand([
-            'command' => 'plugin:refresh',
-        ], $output);
 
         foreach ($disabledPlugins as $disabledPlugin) {
             $this->runCommand([
@@ -109,7 +107,7 @@ class PluginSynchronizeCommand extends Command
                 '--activate' => true,
             ], $output);
         } catch (PluginBaseClassNotFoundException $baseClassNotFoundException) {
-            $this->logger->error($baseClassNotFoundException->getMessage());
+            $this->logger->error('Execute plugin:refresh before plugin:sync !');
             return self::FAILURE;
         }
 
