@@ -11,8 +11,11 @@
         ]
     },
     "require": {
-        "symfony/framework-bundle": ">=4.4",
-        "symfony/console": ">=4.4",
-        "shopware/core": "*"
+        "shopware/core": "^6.4",
+        "symfony/console": "^5.4",
+        "symfony/framework-bundle": "^5.4"
+    },
+    "config": {
+        "sort-packages": true
     }
 }

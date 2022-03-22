@@ -1,7 +1,11 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 
+use Psr\Log\LoggerInterface;
+use Shopware\Core\Framework\Plugin\Exception\PluginBaseClassNotFoundException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,11 +16,15 @@ class PluginSynchronizeCommand extends Command
     protected static $defaultName = 'plugin:sync';
 
     private string $projectDir;
+    private LoggerInterface $logger;
 
-    public function __construct(string $projectDir)
-    {
+    public function __construct(
+        string $projectDir,
+        LoggerInterface $logger
+    ) {
         parent::__construct();
         $this->projectDir = $projectDir;
+        $this->logger = $logger;
     }
 
     protected function configure(): void
@@ -41,10 +49,6 @@ class PluginSynchronizeCommand extends Command
             return $isEnabled === true;
         }));
 
-        $this->runCommand([
-            'command' => 'plugin:refresh',
-        ], $output);
-
         foreach ($disabledPlugins as $disabledPlugin) {
             $this->runCommand([
                 'command' => 'plugin:uninstall',
@@ -52,15 +56,16 @@ class PluginSynchronizeCommand extends Command
             ], $output);
         }
 
+        $installFailed = []; // 0 = install fine, 1 = install failed
         foreach ($enabledPlugins as $enabledPlugin) {
-            $this->runCommand([
-                'command' => 'plugin:install',
-                'plugins' => [$enabledPlugin],
-                '--activate' => true,
-            ], $output);
+            $installFailed[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
+        }
+        $errorSum = (int) array_sum($installFailed);
+        if ($errorSum > self::SUCCESS) {
+            return self::FAILURE;
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 
     /**
@@ -68,6 +73,7 @@ class PluginSynchronizeCommand extends Command
      * @param \Symfony\Component\Console\Output\OutputInterface $output
      *
      * @return int
+     * @throws \Symfony\Component\Console\Exception\ExceptionInterface
      */
     private function runCommand(array $parameters, OutputInterface $output): int
     {
@@ -85,5 +91,21 @@ class PluginSynchronizeCommand extends Command
         $input->setInteractive(false);
 
         return $command->run($input, $output);
+    }
+
+    private function executePluginInstall(string $enabledPlugin, OutputInterface $output): int
+    {
+        try {
+            $this->runCommand([
+                'command' => 'plugin:install',
+                'plugins' => [$enabledPlugin],
+                '--activate' => true,
+            ], $output);
+        } catch (PluginBaseClassNotFoundException $baseClassNotFoundException) {
+            $this->logger->error('Execute plugin:refresh before plugin:sync !');
+            return self::FAILURE;
+        }
+
+        return self::SUCCESS;
     }
 }

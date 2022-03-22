@@ -56,7 +56,7 @@ class ConfigSynchronizeCommand extends Command
         if (!file_exists($filePath)) {
             $this->output->writeln(sprintf('%s not found', $filePath));
 
-            return 1;
+            return self::FAILURE;
         }
 
         $yamlReader = new Yaml();
@@ -65,7 +65,7 @@ class ConfigSynchronizeCommand extends Command
         $this->executeGlobalConfigSync($yaml);
         $this->executeSalesChannelConfigSync($yaml);
 
-        return 0;
+        return self::SUCCESS;
     }
 
     private function executeGlobalConfigSync(array $yaml): void
@@ -107,7 +107,6 @@ class ConfigSynchronizeCommand extends Command
                 $salesChannelNotUpdated[$salesChannelId] = $name;
             }
         }
-
         // put info message only if the salesChannel was totally not updated,
         // we get a salesChannel for every translation, to work in yaml file with the name of the translation
         foreach ($salesChannelNotUpdated as $idNotUpdated => $name) {

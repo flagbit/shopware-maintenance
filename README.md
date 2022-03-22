@@ -79,7 +79,8 @@ We do not use the **uuid** from the SalesChannel because this can be different f
 
 ```bash
 bin/console config:sync # synchronizes configuration values as defined in config/config.yaml
-bin/console plugin:sync # synchronizes plugin enable/disable status as defined in config/plugins.php 
+bin/console plugin:refresh # ensure plugins classes are loaded before plugin:sync execution
+bin/console plugin:sync # synchronizes plugin enable/disable status as defined in config/plugins.php  
 ```
 
 ## Troubleshooting
