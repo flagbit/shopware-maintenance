@@ -56,19 +56,14 @@ class PluginSynchronizeCommand extends Command
             ], $output);
         }
 
-        $currentTry = 1;
-        $maxRetries = 2;
-        do {
-            $pluginsActivated = [];
-            foreach ($enabledPlugins as $enabledPlugin) {
-                $pluginsActivated[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
-            }
-            $errorSum = (int) array_sum($pluginsActivated);
-            if ($errorSum === self::SUCCESS) {
-                $currentTry = $maxRetries; // if there was no error we skip the second try
-            }
-            $currentTry++;
-        } while ($currentTry <= $maxRetries);
+        $pluginsActivated = [];
+        foreach ($enabledPlugins as $enabledPlugin) {
+            $pluginsActivated[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
+        }
+        $errorSum = (int) array_sum($pluginsActivated);
+        if ($errorSum > self::SUCCESS) {
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
