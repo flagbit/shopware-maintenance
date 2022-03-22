@@ -83,13 +83,13 @@ class ConfigSynchronizeCommand extends Command
         $this->output->writeln('---------------------------------------');
         foreach ($config as $key => $value) {
             $currentValue = $this->systemConfigService->get($key, $salesChannelId);
-            $strValue = $this->valueToString($value);
-            $strCurrentValue = $this->valueToString($currentValue);
-            $this->output->writeln(sprintf('Current value: "%s" for key: "%s"', $strCurrentValue, $key));
+            $currentValueAsString = $this->valueToString($currentValue);
+            $valueAsString = $this->valueToString($value);
+            $this->output->writeln(sprintf('Current value: "%s" for key: "%s"', $currentValueAsString, $key));
             // using string comparison for all values (array|bool|float|int|string|null) simplified
-            if ($strCurrentValue !== $strValue) {
+            if ($currentValueAsString !== $valueAsString) {
                 $this->systemConfigService->set($key, $value, $salesChannelId);
-                $this->output->writeln(sprintf('Changed value to: "%s" for key: "%s"', $strValue, $key));
+                $this->output->writeln(sprintf('Changed value to: "%s" for key: "%s"', $valueAsString, $key));
             } else {
                 $this->output->writeln(sprintf('Did not changed the value for key: "%s"', $key));
             }
