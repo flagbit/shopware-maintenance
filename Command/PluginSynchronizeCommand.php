@@ -56,11 +56,11 @@ class PluginSynchronizeCommand extends Command
             ], $output);
         }
 
-        $pluginsActivated = [];
+        $installFailed = []; // 0 = install fine, 1 = install failed
         foreach ($enabledPlugins as $enabledPlugin) {
-            $pluginsActivated[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
+            $installFailed[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
         }
-        $errorSum = (int) array_sum($pluginsActivated);
+        $errorSum = (int) array_sum($installFailed);
         if ($errorSum > self::SUCCESS) {
             return self::FAILURE;
         }
