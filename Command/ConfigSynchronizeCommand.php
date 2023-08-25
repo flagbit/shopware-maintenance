@@ -7,6 +7,7 @@ namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -15,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
 use function array_key_exists;
+use function assert;
 use function file_exists;
 use function implode;
 use function is_array;
@@ -139,7 +141,8 @@ class ConfigSynchronizeCommand extends Command
 
         $salesChannelIds = $this->salesChannelRepository->search($criteria, Context::createDefaultContext());
         foreach ($salesChannelIds->getEntities()->getElements() as $salesChannel) {
-            foreach ($salesChannel->getTranslations()->getElements() as $translation) {
+            assert($salesChannel instanceof SalesChannelEntity);
+            foreach ($salesChannel->getTranslations()?->getElements() ?? [] as $translation) {
                 $salesChannels[$translation->getName()] = $translation->getSalesChannelId();
             }
         }
@@ -147,8 +150,8 @@ class ConfigSynchronizeCommand extends Command
         return $salesChannels;
     }
 
-    /** @param scalar|list<scalar> $value */
-    private function valueToString(string|int|float|bool|array $value): string
+    /** @param scalar|list<scalar>|null $value */
+    private function valueToString(string|int|float|bool|array|null $value): string
     {
         if (is_array($value)) {
             return implode(', ', $value);
