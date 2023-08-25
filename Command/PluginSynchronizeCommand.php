@@ -5,47 +5,52 @@ declare(strict_types=1);
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Shopware\Core\Framework\Plugin\Exception\PluginBaseClassNotFoundException;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function array_filter;
+use function array_keys;
+use function array_sum;
+use function file_exists;
+use function sprintf;
+
 class PluginSynchronizeCommand extends Command
 {
+    // phpcs:ignore
     protected static $defaultName = 'plugin:sync';
 
-    private string $projectDir;
-    private LoggerInterface $logger;
-
     public function __construct(
-        string $projectDir,
-        LoggerInterface $logger
+        private string $projectDir,
+        private LoggerInterface $logger,
     ) {
         parent::__construct();
-        $this->projectDir = $projectDir;
-        $this->logger = $logger;
     }
 
     protected function configure(): void
     {
         parent::configure();
+
         $this->setDescription('Install/uninstall plugins as defined in file config/plugins.php');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (!file_exists($this->projectDir . '/config/plugins.php')) {
+        if (! file_exists($this->projectDir . '/config/plugins.php')) {
             $output->writeln(sprintf('%s not found', $this->projectDir . '/config/plugins.php'));
 
             return 1;
         }
 
-        $plugins = require $this->projectDir . '/config/plugins.php';
-        $disabledPlugins = array_keys(array_filter($plugins, function ($isEnabled) {
+        $plugins         = require $this->projectDir . '/config/plugins.php';
+        $disabledPlugins = array_keys(array_filter($plugins, static function ($isEnabled) {
             return $isEnabled === false;
         }));
-        $enabledPlugins = array_keys(array_filter($plugins, function ($isEnabled) {
+        $enabledPlugins  = array_keys(array_filter($plugins, static function ($isEnabled) {
             return $isEnabled === true;
         }));
 
@@ -60,6 +65,7 @@ class PluginSynchronizeCommand extends Command
         foreach ($enabledPlugins as $enabledPlugin) {
             $installFailed[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
         }
+
         $errorSum = (int) array_sum($installFailed);
         if ($errorSum > self::SUCCESS) {
             return self::FAILURE;
@@ -69,17 +75,15 @@ class PluginSynchronizeCommand extends Command
     }
 
     /**
-     * @param array $parameters
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param array<string, mixed> $parameters
      *
-     * @return int
-     * @throws \Symfony\Component\Console\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     private function runCommand(array $parameters, OutputInterface $output): int
     {
         $application = $this->getApplication();
         if ($application === null) {
-            throw new \RuntimeException('No application initialised');
+            throw new RuntimeException('No application initialised');
         }
 
         $output->writeln('');
@@ -101,8 +105,9 @@ class PluginSynchronizeCommand extends Command
                 'plugins' => [$enabledPlugin],
                 '--activate' => true,
             ], $output);
-        } catch (PluginBaseClassNotFoundException $baseClassNotFoundException) {
+        } catch (PluginBaseClassNotFoundException) {
             $this->logger->error('Execute plugin:refresh before plugin:sync !');
+
             return self::FAILURE;
         }
 

@@ -1,0 +1,30 @@
+name: "Code Analysis"
+
+on:
+  - "push"
+  - "pull_request"
+
+jobs:
+  analysis:
+
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: "actions/checkout@v3"
+
+      - name: "Setup PHP Action"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          php-version: "8.0"
+          extensions: "intl, xdebug, sodium, gd, pdo, curl, iconv, openssl"
+
+      - name: "Composer Install"
+        uses: "ramsey/composer-install@v2"
+        with:
+          composer-options: "--prefer-dist --no-progress"
+
+      - name: "PHPStan"
+        run: "vendor/bin/phpstan"
+
+      - name: "PHPCS"
+        run: "vendor/bin/phpcs"
