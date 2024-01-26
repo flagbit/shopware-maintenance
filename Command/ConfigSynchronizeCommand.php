@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Flagbit\Shopware\ShopwareMaintenance\Command;
 
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Command\Command;
@@ -20,13 +20,13 @@ class ConfigSynchronizeCommand extends Command
     private static string $defaultScope = 'global';
     private string $projectDir;
     private SystemConfigService $systemConfigService;
-    private EntityRepositoryInterface $salesChannelRepository;
+    private EntityRepository $salesChannelRepository;
     private OutputInterface $output;
 
     public function __construct(
         string $projectDir,
         SystemConfigService $systemConfigService,
-        EntityRepositoryInterface $salesChannelRepository
+        EntityRepository $salesChannelRepository
     ) {
         $this->projectDir = $projectDir;
         $this->systemConfigService = $systemConfigService;
