@@ -12,8 +12,8 @@
     },
     "require": {
         "shopware/core": "^6.5",
-        "symfony/console": "^5.4",
-        "symfony/framework-bundle": "^5.4"
+        "symfony/console": "^6.3",
+        "symfony/framework-bundle": "^6.3"
     },
     "config": {
         "sort-packages": true
