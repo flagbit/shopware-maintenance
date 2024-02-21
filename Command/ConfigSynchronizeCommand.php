@@ -8,15 +8,19 @@ use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Yaml;
 
+#[AsCommand(
+    name: 'config:sync',
+    description: 'Update system config like defined in file config/config.yaml',
+)]
 class ConfigSynchronizeCommand extends Command
 {
-    protected static $defaultName = 'config:sync';
     private static string $defaultScope = 'global';
     private string $projectDir;
     private SystemConfigService $systemConfigService;
@@ -37,7 +41,6 @@ class ConfigSynchronizeCommand extends Command
     protected function configure(): void
     {
         parent::configure();
-        $this->setDescription('Update system config like defined in file config/config.yaml');
         $this->addArgument(
             'config_path',
             InputArgument::OPTIONAL,
