@@ -53,12 +53,12 @@ It is divided in different groups `core`, `third_party`, `agency` and `project`,
 
 # be awere those are sorted lists because of plugin dependencies may occur
 return [
-    'core' => [                                     # plugins from shopware agency
+    'core' => [                                     # original plugins from shopware
         'SwagMarkets' => false,                     # disabled
         'SwagPayPal' => true,                       # enabled
         'SwagPlatformDemoData' => false,            # disabled
     ],
-    'third_party' => [                              # plugins from other agencies
+    'third_party' => [                              # plugins from other vendors
         'CoeWishlistSw6' => ture,                   # enabled
         'DreiscSeoPro' => false,                    # disabled
         'GoogleConsentV2' => true,                  # enabled
@@ -78,7 +78,7 @@ return [
 #### Groups
 
 ##### Core
-In the group `core` should be the plugins from shopware agency. Those mostly start with `Swag`.
+In the group `core` should be the plugins from shopware itself. Those mostly start with `Swag`.
 
 ##### Third-Party
 The group `third_party` is for plugin of other agencies which we get from the store.
