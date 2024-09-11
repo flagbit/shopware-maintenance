@@ -38,7 +38,11 @@ return [
 
 ## Usage
 
+### Install/Uninstall plugins
+
 The file `config/plugins.php` defines which Shopware plugins should be enabled or disabled.
+It is divided in different groups `core`, `third_party`, `agency` and `project`, which are installed in exactly this order.
+
 
 **Example**
 
@@ -47,14 +51,45 @@ The file `config/plugins.php` defines which Shopware plugins should be enabled o
 
 <?php declare(strict_types=1);
 
-# be a were this is a sorted list because of plugin dependencies may occur
+# be awere those are sorted lists because of plugin dependencies may occur
 return [
-    'SwagMarkets' => false,          # disabled
-    'SwagPayPal' => true,            # enabled
-    'SwagPlatformDemoData' => false, # disabled
+    'core' => [                                     # plugins from shopware agency
+        'SwagMarkets' => false,                     # disabled
+        'SwagPayPal' => true,                       # enabled
+        'SwagPlatformDemoData' => false,            # disabled
+    ],
+    'third_party' => [                              # plugins from other agencies
+        'CoeWishlistSw6' => ture,                   # enabled
+        'DreiscSeoPro' => false,                    # disabled
+        'GoogleConsentV2' => true,                  # enabled
+        'IesCommissionField6' => true,              # enabled
+    ],
+    'agency' => [                                   # plugins from flagbit for company-wide usage
+        'FlagbitGoogleConsentMode' => true,         # enabled
+    ],
+    'project' => [                                  # plugins for this project
+        'CustomerStoreApi' => false,                # disabled
+        'CustomerWishlistCommissionField' => true,  # enabled
+    ],
 ];
 
 ```
+
+#### Groups
+
+##### Core
+In the group `core` should be the plugins from shopware agency. Those mostly start with `Swag`.
+
+##### Third-Party
+The group `third_party` is for plugin of other agencies which we get from the store.
+
+##### Agency
+Plugins which are from flagbit but aren't for specific for this project and can be used in other projects as well, it should be in `agency`.
+
+##### Project
+The group `project` is for plugins which are specifically developed for this project.
+
+### Define Config
 
 The file `config/config.yaml` defines Shopware plugin configuration values to be set.
 
