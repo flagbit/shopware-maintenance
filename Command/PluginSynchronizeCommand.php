@@ -55,7 +55,7 @@ class PluginSynchronizeCommand extends Command
         $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_AGENCY, $output);
         $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_PROJECT, $output);
 
-        if ($errorSum > self::SUCCESS) {
+        if ($errorSum > 0) {
             return self::FAILURE;
         }
 
