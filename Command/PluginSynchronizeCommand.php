@@ -18,6 +18,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class PluginSynchronizeCommand extends Command
 {
+    public const GROUP_CORE = 'core';
+    public const GROUP_THIRD_PARTY = 'third_party';
+    public const GROUP_AGENCY = 'agency';
+    public const GROUP_PROJECT = 'project';
+
     private string $projectDir;
     private LoggerInterface $logger;
 
@@ -43,7 +48,33 @@ class PluginSynchronizeCommand extends Command
             return 1;
         }
 
-        $plugins = require $this->projectDir . '/config/plugins.php';
+        $pluginGroups = require $this->projectDir . '/config/plugins.php';
+
+        $errorSum = $this->installUninstallPluginGroup($pluginGroups, self::GROUP_CORE, $output);
+        $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_THIRD_PARTY, $output);
+        $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_AGENCY, $output);
+        $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_PROJECT, $output);
+
+        if ($errorSum > 0) {
+            return self::FAILURE;
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param array<string, array<string, bool>> $plugins
+     * @param OutputInterface $output
+     *
+     * @return int
+     */
+    private function installUninstallPluginGroup(array $pluginGroups, string $groupName, OutputInterface $output): int
+    {
+        if (!array_key_exists($groupName, $pluginGroups)) {
+            return 0;
+        }
+
+        $plugins = $pluginGroups[$groupName];
         $disabledPlugins = array_keys(array_filter($plugins, function ($isEnabled) {
             return $isEnabled === false;
         }));
@@ -62,12 +93,8 @@ class PluginSynchronizeCommand extends Command
         foreach ($enabledPlugins as $enabledPlugin) {
             $installFailed[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
         }
-        $errorSum = (int) array_sum($installFailed);
-        if ($errorSum > self::SUCCESS) {
-            return self::FAILURE;
-        }
 
-        return self::SUCCESS;
+        return array_sum($installFailed);
     }
 
     /**
