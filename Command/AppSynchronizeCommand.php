@@ -42,7 +42,7 @@ class AppSynchronizeCommand extends Command
         if (!file_exists($this->projectDir . self::CONFIG_FILE_PATH)) {
             $output->writeln(sprintf('%s not found', $this->projectDir . self::CONFIG_FILE_PATH));
 
-            return 1;
+            return self::FAILURE;
         }
 
         $apps = require $this->projectDir . self::CONFIG_FILE_PATH;
