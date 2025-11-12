@@ -9,6 +9,12 @@
             <tag name="kernel.event_subscriber"/>
         </service>
 
+	<service id="Flagbit\Shopware\ShopwareMaintenance\Command\AppSynchronizeCommand">
+            <argument type="string">%kernel.project_dir%</argument>
+            <argument type="service" id="logger"/>
+            <tag name="console.command"/>
+        </service>
+
         <service id="Flagbit\Shopware\ShopwareMaintenance\Command\PluginSynchronizeCommand">
             <argument type="string">%kernel.project_dir%</argument>
             <argument type="service" id="logger"/>
