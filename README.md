@@ -92,7 +92,9 @@ The group `project` is for plugins which are specifically developed for this pro
 ### Install/Uninstall apps
 
 The file `config/apps.php` defines which Shopware apps should be enabled or disabled.
-While installing the plugins the command will accept all permissions and hosts.
+
+> [!CAUTION]
+> While installing the plugins the command will accept all permissions and hosts.
 
 
 **Example**
