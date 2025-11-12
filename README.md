@@ -89,6 +89,27 @@ Plugins which are from flagbit but aren't for specific for this project and can 
 ##### Project
 The group `project` is for plugins which are specifically developed for this project.
 
+### Install/Uninstall apps
+
+The file `config/apps.php` defines which Shopware apps should be enabled or disabled.
+While installing the plugins the command will accept all permissions and hosts.
+
+
+**Example**
+
+```php
+# config/apps.php
+
+<?php declare(strict_types=1);
+
+return [
+    'SwagAnalytics' => true,                # enabled
+    'InstoImmersiveElements' => false,      # disbled
+    'DmitsPaymentCostApp' => true,          # enabled
+];
+
+```
+
 ### Define Config
 
 The file `config/config.yaml` defines Shopware plugin configuration values to be set.
