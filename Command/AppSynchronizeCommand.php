@@ -74,7 +74,7 @@ class AppSynchronizeCommand extends Command
         foreach ($disabledPlugins as $disabledPlugin) {
             $this->runCommand([
                 'command' => 'app:uninstall',
-                'apps' => [$disabledPlugin],
+                'name' => $disabledPlugin,
             ], $output);
         }
 
@@ -116,7 +116,7 @@ class AppSynchronizeCommand extends Command
         try {
             $this->runCommand([
                 'command' => 'app:install',
-                'name' => [$enabledPlugin],
+                'name' => $enabledPlugin,
                 '--activate' => true,
                 '--force' => true,
             ], $output);
