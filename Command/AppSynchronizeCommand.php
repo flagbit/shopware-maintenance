@@ -8,6 +8,7 @@ use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,6 +34,9 @@ class AppSynchronizeCommand extends Command
         $this->logger = $logger;
     }
 
+    /**
+     * @throws ExceptionInterface
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $configPath = Path::join($this->projectDir, self::CONFIG_FILE_PATH);
@@ -43,6 +47,9 @@ class AppSynchronizeCommand extends Command
         }
 
         $apps = require $configPath;
+        if (!is_array($apps)) {
+            throw new \RuntimeException('Invalid apps config: expected array');
+        }
 
         $errorSum = $this->installUninstallApps($apps, $output);
 
@@ -54,41 +61,75 @@ class AppSynchronizeCommand extends Command
     }
 
     /**
-     * @param array<string, array<string, bool>> $plugins
+     * @param array<string, array<string, bool>> $apps
      * @param OutputInterface $output
      *
      * @return int
      */
     private function installUninstallApps(array $apps, OutputInterface $output): int
     {
-        $disabledPlugins = array_keys(array_filter($apps, function ($isEnabled) {
-            return $isEnabled === false;
-        }));
-        $enabledPlugins = array_keys(array_filter($apps, function ($isEnabled) {
-            return $isEnabled === true;
-        }));
+        $enabledApps = [];
+        $disabledApps = [];
+        foreach ($apps as $app => $isEnabled) {
+            if ($isEnabled) {
+                $enabledApps[] = $app;
+                continue;
+            }
 
-        foreach ($disabledPlugins as $disabledPlugin) {
+            $disabledApps[] = $app;
+        }
+
+        $uninstallFailed = []; // 0 = uninstall fine, 1 = uninstall failed
+        foreach ($disabledApps as $disabledApp) {
+            $uninstallFailed[$disabledApp] = $this->executeAppUninstall($disabledApp, $output);
+        }
+
+        $installFailed = []; // 0 = install fine, 1 = install failed
+        foreach ($enabledApps as $enabledPlugin) {
+            $installFailed[$enabledPlugin] = $this->executeAppInstall($enabledPlugin, $output);
+        }
+
+        return array_sum($uninstallFailed) + array_sum($installFailed);
+    }
+
+    private function executeAppUninstall(string $disabledPlugin, OutputInterface $output): int
+    {
+        try {
             $this->runCommand([
                 'command' => 'app:uninstall',
                 'name' => $disabledPlugin,
             ], $output);
+        } catch (Exception|ExceptionInterface $e) {
+            $this->logger->error('Error while uninstalling app: ' . $e->getMessage());
+            return self::FAILURE;
         }
 
-        $installFailed = []; // 0 = install fine, 1 = install failed
-        foreach ($enabledPlugins as $enabledPlugin) {
-            $installFailed[$enabledPlugin] = $this->executeAppInstall($enabledPlugin, $output);
+        return self::SUCCESS;
+    }
+
+    private function executeAppInstall(string $enabledPlugin, OutputInterface $output): int
+    {
+        try {
+            $this->runCommand([
+                'command' => 'app:install',
+                'name' => $enabledPlugin,
+                '--activate' => true,
+                '--force' => true,
+            ], $output);
+        } catch (Exception|ExceptionInterface $e) {
+            $this->logger->error('Error while installing app: ' . $e->getMessage());
+            return self::FAILURE;
         }
 
-        return array_sum($installFailed);
+        return self::SUCCESS;
     }
 
     /**
      * @param array $parameters
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param OutputInterface $output
      *
      * @return int
-     * @throws \Symfony\Component\Console\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     private function runCommand(array $parameters, OutputInterface $output): int
     {
@@ -106,22 +147,5 @@ class AppSynchronizeCommand extends Command
         $input->setInteractive(false);
 
         return $command->run($input, $output);
-    }
-
-    private function executeAppInstall(string $enabledPlugin, OutputInterface $output): int
-    {
-        try {
-            $this->runCommand([
-                'command' => 'app:install',
-                'name' => $enabledPlugin,
-                '--activate' => true,
-                '--force' => true,
-            ], $output);
-        } catch (Exception $e) {
-            $this->logger->error('Error while installing app: ' . $e->getMessage());
-            return self::FAILURE;
-        }
-
-        return self::SUCCESS;
     }
 }
