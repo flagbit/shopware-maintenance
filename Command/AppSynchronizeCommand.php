@@ -20,6 +20,17 @@ use Symfony\Component\Filesystem\Path;
 )]
 class AppSynchronizeCommand extends Command
 {
+    public const GROUP_CORE = 'core';
+    public const GROUP_THIRD_PARTY = 'third_party';
+    public const GROUP_AGENCY = 'agency';
+    public const GROUP_PROJECT = 'project';
+    private const SEQUENTIAL_GROUPS = [
+        self::GROUP_CORE,
+        self::GROUP_THIRD_PARTY,
+        self::GROUP_AGENCY,
+        self::GROUP_PROJECT,
+    ];
+
     private const CONFIG_FILE_PATH = 'config/apps.php';
 
     private string $projectDir;
@@ -46,12 +57,15 @@ class AppSynchronizeCommand extends Command
             return self::FAILURE;
         }
 
-        $apps = require $configPath;
-        if (!is_array($apps)) {
+        $appGroups = require $configPath;
+        if (!is_array($appGroups)) {
             throw new \RuntimeException('Invalid apps config: expected array');
         }
 
-        $errorSum = $this->installUninstallApps($apps, $output);
+        $errorSum = 0;
+        foreach (self::SEQUENTIAL_GROUPS as $group) {
+            $errorSum += $this->installUninstallAppGroup($appGroups, $group, $output);
+        }
 
         if ($errorSum > 0) {
             return self::FAILURE;
@@ -61,16 +75,37 @@ class AppSynchronizeCommand extends Command
     }
 
     /**
-     * @param array<string, array<string, bool>> $apps
+     * @param array<string, array<string, bool>> $appsGroups
+     * @param string $groupName
      * @param OutputInterface $output
      *
      * @return int
      */
-    private function installUninstallApps(array $apps, OutputInterface $output): int
+    private function installUninstallAppGroup(array $appsGroups, string $groupName, OutputInterface $output): int
     {
+        if (!array_key_exists($groupName, $appsGroups)) {
+            return 0;
+        }
+
+        $apps = $appsGroups[$groupName];
+        if (!is_array($apps)) {
+            throw new \RuntimeException(sprintf(
+                'Invalid apps config for group "%s": expected array',
+                $groupName
+            ));
+        }
+
         $enabledApps = [];
         $disabledApps = [];
         foreach ($apps as $app => $isEnabled) {
+            if (!is_bool($isEnabled)) {
+                throw new \RuntimeException(sprintf(
+                    'Invalid value for app "%s" in group "%s": expected boolean',
+                    $app,
+                    $groupName
+                ));
+            }
+
             if ($isEnabled) {
                 $enabledApps[] = $app;
                 continue;
@@ -79,26 +114,28 @@ class AppSynchronizeCommand extends Command
             $disabledApps[] = $app;
         }
 
-        $uninstallFailed = []; // 0 = uninstall fine, 1 = uninstall failed
+        $uninstallFailed = 0;
         foreach ($disabledApps as $disabledApp) {
-            $uninstallFailed[$disabledApp] = $this->executeAppUninstall($disabledApp, $output);
+            $uninstallFailed += $this->executeAppUninstall($disabledApp, $output);
         }
 
-        $installFailed = []; // 0 = install fine, 1 = install failed
+        $installFailed = 0;
         foreach ($enabledApps as $enabledPlugin) {
-            $installFailed[$enabledPlugin] = $this->executeAppInstall($enabledPlugin, $output);
+            $installFailed += $this->executeAppInstall($enabledPlugin, $output);
         }
 
-        return array_sum($uninstallFailed) + array_sum($installFailed);
+        return $uninstallFailed + $installFailed;
     }
 
-    private function executeAppUninstall(string $disabledPlugin, OutputInterface $output): int
+    private function executeAppUninstall(string $disabledApp, OutputInterface $output): int
     {
         try {
+            $this->logger->info(sprintf('Uninstalling app: %s', $disabledApp));
             $this->runCommand([
                 'command' => 'app:uninstall',
-                'name' => $disabledPlugin,
+                'name' => $disabledApp,
             ], $output);
+            $this->logger->info(sprintf('Successfully uninstalled app: %s', $disabledApp));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while uninstalling app: ' . $e->getMessage());
             return self::FAILURE;
@@ -107,17 +144,20 @@ class AppSynchronizeCommand extends Command
         return self::SUCCESS;
     }
 
-    private function executeAppInstall(string $enabledPlugin, OutputInterface $output): int
+    private function executeAppInstall(string $enabledApp, OutputInterface $output): int
     {
         try {
+            $this->logger->info(sprintf('Installing app: %s', $enabledApp));
             $this->runCommand([
                 'command' => 'app:install',
-                'name' => $enabledPlugin,
+                'name' => $enabledApp,
                 '--activate' => true,
                 '--force' => true,
             ], $output);
+            $this->logger->info(sprintf('Successfully installed app: %s', $enabledApp));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while installing app: ' . $e->getMessage());
+
             return self::FAILURE;
         }
 
