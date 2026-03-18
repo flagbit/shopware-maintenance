@@ -11,6 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Path;
 
 #[AsCommand(
     name: 'plugin:sync',
@@ -22,6 +23,8 @@ class PluginSynchronizeCommand extends Command
     public const GROUP_THIRD_PARTY = 'third_party';
     public const GROUP_AGENCY = 'agency';
     public const GROUP_PROJECT = 'project';
+
+    private const CONFIG_FILE_PATH = 'config/plugins.php';
 
     private string $projectDir;
     private LoggerInterface $logger;
@@ -35,20 +38,16 @@ class PluginSynchronizeCommand extends Command
         $this->logger = $logger;
     }
 
-    protected function configure(): void
-    {
-        parent::configure();
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (!file_exists($this->projectDir . '/config/plugins.php')) {
-            $output->writeln(sprintf('%s not found', $this->projectDir . '/config/plugins.php'));
+        $configPath = Path::join($this->projectDir . self::CONFIG_FILE_PATH);
+        if (!file_exists($configPath)) {
+            $output->writeln(sprintf('%s not found', $configPath));
 
             return 1;
         }
 
-        $pluginGroups = require $this->projectDir . '/config/plugins.php';
+        $pluginGroups = require $configPath;
 
         $errorSum = $this->installUninstallPluginGroup($pluginGroups, self::GROUP_CORE, $output);
         $errorSum += $this->installUninstallPluginGroup($pluginGroups, self::GROUP_THIRD_PARTY, $output);

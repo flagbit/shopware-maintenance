@@ -11,6 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Path;
 
 #[AsCommand(
     name: 'app:sync',
@@ -18,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 class AppSynchronizeCommand extends Command
 {
-    private const CONFIG_FILE_PATH = '/config/apps.php';
+    private const CONFIG_FILE_PATH = 'config/apps.php';
 
     private string $projectDir;
     private LoggerInterface $logger;
@@ -32,20 +33,16 @@ class AppSynchronizeCommand extends Command
         $this->logger = $logger;
     }
 
-    protected function configure(): void
-    {
-        parent::configure();
-    }
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if (!file_exists($this->projectDir . self::CONFIG_FILE_PATH)) {
-            $output->writeln(sprintf('%s not found', $this->projectDir . self::CONFIG_FILE_PATH));
+        $configPath = Path::join($this->projectDir, self::CONFIG_FILE_PATH);
+        if (!file_exists($configPath)) {
+            $output->writeln(sprintf('%s not found', $configPath));
 
             return self::FAILURE;
         }
 
-        $apps = require $this->projectDir . self::CONFIG_FILE_PATH;
+        $apps = require $configPath;
 
         $errorSum = $this->installUninstallApps($apps, $output);
 
