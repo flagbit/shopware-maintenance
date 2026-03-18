@@ -11,11 +11,14 @@
         ]
     },
     "require": {
-        "shopware/core": "^6.5|^6.6",
+        "shopware/core": "^6.5|^6.6|^6.7",
         "symfony/console": "^6.3|^7.0",
         "symfony/framework-bundle": "^6.3|^7.0"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "symfony/runtime": true
+        }
     }
 }
