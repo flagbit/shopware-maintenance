@@ -40,7 +40,7 @@ class PluginSynchronizeCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $configPath = Path::join($this->projectDir . self::CONFIG_FILE_PATH);
+        $configPath = Path::join($this->projectDir, self::CONFIG_FILE_PATH);
         if (!file_exists($configPath)) {
             $output->writeln(sprintf('%s not found', $configPath));
 
