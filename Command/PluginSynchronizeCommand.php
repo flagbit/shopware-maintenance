@@ -82,19 +82,20 @@ class PluginSynchronizeCommand extends Command
             return $isEnabled === true;
         }));
 
+        $errorCount = 0;
         foreach ($disabledPlugins as $disabledPlugin) {
-            $this->runCommand([
+            $exitCode = $this->runCommand([
                 'command' => 'plugin:uninstall',
                 'plugins' => [$disabledPlugin],
             ], $output);
+            $errorCount += $exitCode !== self::SUCCESS ? 1 : 0;
         }
 
-        $installFailed = []; // 0 = install fine, 1 = install failed
         foreach ($enabledPlugins as $enabledPlugin) {
-            $installFailed[$enabledPlugin] = $this->executePluginInstall($enabledPlugin, $output);
+            $errorCount += $this->executePluginInstall($enabledPlugin, $output) !== self::SUCCESS ? 1 : 0;
         }
 
-        return array_sum($installFailed);
+        return $errorCount;
     }
 
     /**
@@ -124,7 +125,7 @@ class PluginSynchronizeCommand extends Command
     private function executePluginInstall(string $enabledPlugin, OutputInterface $output): int
     {
         try {
-            $this->runCommand([
+            return $this->runCommand([
                 'command' => 'plugin:install',
                 'plugins' => [$enabledPlugin],
                 '--activate' => true,
@@ -133,7 +134,5 @@ class PluginSynchronizeCommand extends Command
             $this->logger->error('Execute plugin:refresh before plugin:sync !');
             return self::FAILURE;
         }
-
-        return self::SUCCESS;
     }
 }
