@@ -114,7 +114,6 @@ class PluginSynchronizeCommand extends Command
         $output->writeln('');
 
         $command = $application->find($parameters['command']);
-        unset($parameters['command']);
 
         $input = new ArrayInput($parameters);
         $input->setInteractive(false);
