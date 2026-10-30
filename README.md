@@ -38,6 +38,27 @@ return [
 
 ## Usage
 
+### Block admin plugin refresh during deployment
+
+Set `SHOPWARE_MAINTENANCE_DEPLOY_LOCK_PATH` to the absolute path of this shop's
+Deployer lock, for example `/var/www/shop/.dep/deploy.lock`. An unset or empty
+value disables the check. PHP-FPM must be able to access the path.
+
+While the file exists, `POST /api/_action/extension/refresh` returns HTTP 503
+without running the refresh. This prevents the old release's admin refresh
+from removing plugin records added by the new release during deployment.
+No changes to the Deployer recipe are required.
+
+Install and configure this protection in the serving release before relying
+on it for a later deployment. It only guards this HTTP route, not CLI commands
+or indirect refresh calls from other plugin operations. It does not wait for
+requests already running. When Deployer removes the lock, including after a
+failed deployment, refresh is allowed again even if the old release is still
+serving. The check does not create, remove or hold the lock.
+
+The handler uses APIs available in Shopware 6.5, 6.6 and 6.7. The package's
+existing dependency requirements still apply; they are not widened by this feature.
+
 ### Install/Uninstall plugins
 
 The file `config/plugins.php` defines which Shopware plugins should be enabled or disabled.
