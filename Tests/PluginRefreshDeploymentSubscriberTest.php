@@ -19,8 +19,8 @@ $loader = new Symfony\Component\DependencyInjection\Loader\XmlFileLoader(
     new Symfony\Component\Config\FileLocator(dirname(__DIR__) . '/Resources/config')
 );
 $loader->load('services.xml');
-if ($container->getParameterBag()->all()['env(SHOPWARE_MAINTENANCE_DEPLOY_LOCK_PATH)'] !== '') {
-    throw new RuntimeException('The default lock path must be an empty string.');
+if ($container->getDefinition(PluginRefreshDeploymentSubscriber::class)->getArgument(0) !== '%kernel.project_dir%') {
+    throw new RuntimeException('The subscriber must receive the application root.');
 }
 
 $kernel = new class implements HttpKernelInterface {
@@ -31,8 +31,14 @@ $kernel = new class implements HttpKernelInterface {
 };
 $directory = sys_get_temp_dir() . '/maintenance-guard-' . bin2hex(random_bytes(8));
 mkdir($directory);
-$lock = $directory . '/deploy.lock';
-$guard = new PluginRefreshDeploymentSubscriber($lock);
+mkdir($directory . '/releases');
+$release = $directory . '/releases/release-name';
+mkdir($release);
+mkdir($directory . '/.dep');
+mkdir($directory . '/local-checkout');
+symlink('releases/release-name', $directory . '/current');
+$lock = $directory . '/.dep/deploy.lock';
+$guard = new PluginRefreshDeploymentSubscriber($release);
 $check = static function (PluginRefreshDeploymentSubscriber $subscriber, string $route, bool $blocked) use ($kernel): void {
     $request = new Request();
     $request->attributes->set('_route', $route);
@@ -55,16 +61,26 @@ try {
     touch($lock);
     $check($guard, 'api.extension.refresh', true);
     $check($guard, 'api.extension.installed', false);
-    $check(new PluginRefreshDeploymentSubscriber(''), 'api.extension.refresh', false);
+    $check(new PluginRefreshDeploymentSubscriber($directory . '/current'), 'api.extension.refresh', true);
+    $check(new PluginRefreshDeploymentSubscriber($directory . '/local-checkout'), 'api.extension.refresh', false);
+    $check(new PluginRefreshDeploymentSubscriber($directory . '/missing'), 'api.extension.refresh', false);
+    rename($directory . '/.dep', $directory . '/saved-dep');
+    $check($guard, 'api.extension.refresh', false);
+    rename($directory . '/saved-dep', $directory . '/.dep');
     if (!is_file($lock)) {
         throw new RuntimeException('The guard must not remove the deploy lock.');
     }
     unlink($lock);
     $check($guard, 'api.extension.refresh', false);
-    echo "PASS: lock creation/removal, disabled guard, unrelated route, HTTP 503 and lock ownership.\n";
+    echo "PASS: standard layout, symlink, local checkout, missing paths, lock creation/removal, unrelated route and HTTP 503.\n";
 } finally {
     if (is_file($lock)) {
         unlink($lock);
     }
+    unlink($directory . '/current');
+    rmdir($release);
+    rmdir($directory . '/releases');
+    rmdir($directory . '/local-checkout');
+    rmdir($directory . '/.dep');
     rmdir($directory);
 }

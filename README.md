@@ -40,16 +40,18 @@ return [
 
 ### Block admin plugin refresh during deployment
 
-Set `SHOPWARE_MAINTENANCE_DEPLOY_LOCK_PATH` to the absolute path of this shop's
-Deployer lock, for example `/var/www/shop/.dep/deploy.lock`. An unset or empty
-value disables the check. PHP-FPM must be able to access the path.
+The check automatically uses `<deploy_path>/.dep/deploy.lock` when the resolved
+application root is `<deploy_path>/releases/<release>` and `.dep` exists.
+Symlinks such as `current` are resolved first. No environment setting is needed.
+Local checkouts, paths that cannot be resolved and other directory layouts are
+not protected. PHP-FPM must be able to access the deployment directories.
 
 While the file exists, `POST /api/_action/extension/refresh` returns HTTP 503
 without running the refresh. This prevents the old release's admin refresh
 from removing plugin records added by the new release during deployment.
 No changes to the Deployer recipe are required.
 
-Install and configure this protection in the serving release before relying
+Install this protection in the serving release before relying
 on it for a later deployment. It only guards this HTTP route, not CLI commands
 or indirect refresh calls from other plugin operations. It does not wait for
 requests already running. When Deployer removes the lock, including after a

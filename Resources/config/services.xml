@@ -3,13 +3,9 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
-    <parameters>
-        <parameter key="env(SHOPWARE_MAINTENANCE_DEPLOY_LOCK_PATH)" type="string"></parameter>
-    </parameters>
-
     <services>
         <service id="Flagbit\Shopware\ShopwareMaintenance\EventSubscriber\PluginRefreshDeploymentSubscriber">
-            <argument>%env(SHOPWARE_MAINTENANCE_DEPLOY_LOCK_PATH)%</argument>
+            <argument type="string">%kernel.project_dir%</argument>
             <tag name="kernel.event_subscriber"/>
         </service>
 
