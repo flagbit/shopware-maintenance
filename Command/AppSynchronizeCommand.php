@@ -95,10 +95,10 @@ class AppSynchronizeCommand extends Command
             ));
         }
 
-        $enabledApps = [];
-        $disabledApps = [];
-        foreach ($apps as $app => $isEnabled) {
-            if (!is_bool($isEnabled)) {
+        $appsToInstall = [];
+        $appsToUninstall = [];
+        foreach ($apps as $app => $shouldBeInstalled) {
+            if (!is_bool($shouldBeInstalled)) {
                 throw new \RuntimeException(sprintf(
                     'Invalid value for app "%s" in group "%s": expected boolean',
                     $app,
@@ -106,45 +106,45 @@ class AppSynchronizeCommand extends Command
                 ));
             }
 
-            if ($isEnabled) {
-                $enabledApps[] = $app;
+            if ($shouldBeInstalled) {
+                $appsToInstall[] = $app;
                 continue;
             }
 
-            $disabledApps[] = $app;
+            $appsToUninstall[] = $app;
         }
 
         $uninstallFailed = 0;
-        foreach ($disabledApps as $disabledApp) {
-            $uninstallFailed += $this->executeAppUninstall($disabledApp, $output);
+        foreach ($appsToUninstall as $appToUninstall) {
+            $uninstallFailed += $this->executeAppUninstall($appToUninstall, $output);
         }
 
         $installFailed = 0;
-        foreach ($enabledApps as $enabledPlugin) {
-            $installFailed += $this->executeAppInstall($enabledPlugin, $output);
+        foreach ($appsToInstall as $appToInstall) {
+            $installFailed += $this->executeAppInstall($appToInstall, $output);
         }
 
         return $uninstallFailed + $installFailed;
     }
 
-    private function executeAppUninstall(string $disabledApp, OutputInterface $output): int
+    private function executeAppUninstall(string $appName, OutputInterface $output): int
     {
         try {
-            $this->logger->info(sprintf('Uninstalling app: %s', $disabledApp));
+            $this->logger->info(sprintf('Uninstalling app: %s', $appName));
             $exitCode = $this->runCommand([
                 'command' => 'app:uninstall',
-                'name' => $disabledApp,
+                'name' => $appName,
             ], $output);
             if ($exitCode !== self::SUCCESS) {
                 $this->logger->error(sprintf(
                     'Error while uninstalling app: %s (exit code %d)',
-                    $disabledApp,
+                    $appName,
                     $exitCode,
                 ));
 
                 return self::FAILURE;
             }
-            $this->logger->info(sprintf('Successfully uninstalled app: %s', $disabledApp));
+            $this->logger->info(sprintf('Successfully uninstalled app: %s', $appName));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while uninstalling app: ' . $e->getMessage());
             return self::FAILURE;
@@ -153,22 +153,22 @@ class AppSynchronizeCommand extends Command
         return self::SUCCESS;
     }
 
-    private function executeAppInstall(string $enabledApp, OutputInterface $output): int
+    private function executeAppInstall(string $appName, OutputInterface $output): int
     {
         try {
-            $this->logger->info(sprintf('Installing app: %s', $enabledApp));
+            $this->logger->info(sprintf('Installing app: %s', $appName));
             $exitCode = $this->runCommand([
                 'command' => 'app:install',
-                'name' => $enabledApp,
+                'name' => $appName,
                 '--activate' => true,
                 '--force' => true,
             ], $output);
             if ($exitCode !== self::SUCCESS) {
-                $this->logger->error(sprintf('Error while installing app: %s (exit code %d)', $enabledApp, $exitCode));
+                $this->logger->error(sprintf('Error while installing app: %s (exit code %d)', $appName, $exitCode));
 
                 return self::FAILURE;
             }
-            $this->logger->info(sprintf('Successfully installed app: %s', $enabledApp));
+            $this->logger->info(sprintf('Successfully installed app: %s', $appName));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while installing app: ' . $e->getMessage());
 
