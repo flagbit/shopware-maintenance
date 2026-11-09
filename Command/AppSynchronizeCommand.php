@@ -131,10 +131,19 @@ class AppSynchronizeCommand extends Command
     {
         try {
             $this->logger->info(sprintf('Uninstalling app: %s', $disabledApp));
-            $this->runCommand([
+            $exitCode = $this->runCommand([
                 'command' => 'app:uninstall',
                 'name' => $disabledApp,
             ], $output);
+            if ($exitCode !== self::SUCCESS) {
+                $this->logger->error(sprintf(
+                    'Error while uninstalling app: %s (exit code %d)',
+                    $disabledApp,
+                    $exitCode,
+                ));
+
+                return self::FAILURE;
+            }
             $this->logger->info(sprintf('Successfully uninstalled app: %s', $disabledApp));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while uninstalling app: ' . $e->getMessage());
@@ -148,12 +157,17 @@ class AppSynchronizeCommand extends Command
     {
         try {
             $this->logger->info(sprintf('Installing app: %s', $enabledApp));
-            $this->runCommand([
+            $exitCode = $this->runCommand([
                 'command' => 'app:install',
                 'name' => $enabledApp,
                 '--activate' => true,
                 '--force' => true,
             ], $output);
+            if ($exitCode !== self::SUCCESS) {
+                $this->logger->error(sprintf('Error while installing app: %s (exit code %d)', $enabledApp, $exitCode));
+
+                return self::FAILURE;
+            }
             $this->logger->info(sprintf('Successfully installed app: %s', $enabledApp));
         } catch (Exception|ExceptionInterface $e) {
             $this->logger->error('Error while installing app: ' . $e->getMessage());
@@ -181,7 +195,6 @@ class AppSynchronizeCommand extends Command
         $output->writeln('');
 
         $command = $application->find($parameters['command']);
-        unset($parameters['command']);
 
         $input = new ArrayInput($parameters);
         $input->setInteractive(false);
